@@ -1,0 +1,62 @@
+[
+    {
+        "id":  "naksan-beach",
+        "place":  "낙산해수욕장",
+        "path":  "places/naksan-beach.jpg",
+        "title":  "File:Naksan Beach 01.jpg",
+        "author":  "Grapesurgeon",
+        "license":  "CC BY-SA 4.0",
+        "licenseUrl":  "https://creativecommons.org/licenses/by-sa/4.0",
+        "source":  "https://commons.wikimedia.org/wiki/File:Naksan_Beach_01.jpg",
+        "original":  "https://upload.wikimedia.org/wikipedia/commons/5/5a/Naksan_Beach_01.jpg?utm_source=commons.wikimedia.org\u0026utm_campaign=imageinfo\u0026utm_content=original",
+        "changes":  "Resized by Wikimedia thumbnail service; displayed with CSS crop; original file unmodified locally."
+    },
+    {
+        "id":  "sokcho-beach",
+        "place":  "속초해수욕장",
+        "path":  "places/sokcho-beach.jpg",
+        "title":  "File:Sokcho Beach 01.jpg",
+        "author":  "Grapesurgeon",
+        "license":  "CC BY-SA 4.0",
+        "licenseUrl":  "https://creativecommons.org/licenses/by-sa/4.0",
+        "source":  "https://commons.wikimedia.org/wiki/File:Sokcho_Beach_01.jpg",
+        "original":  "https://upload.wikimedia.org/wikipedia/commons/2/28/Sokcho_Beach_01.jpg?utm_source=commons.wikimedia.org\u0026utm_campaign=imageinfo\u0026utm_content=original",
+        "changes":  "Resized by Wikimedia thumbnail service; displayed with CSS crop; original file unmodified locally."
+    },
+    {
+        "id":  "naksansa",
+        "place":  "낙산사",
+        "path":  "places/naksansa.jpg",
+        "title":  "File:Naksan Temple.jpg",
+        "author":  "Choism97",
+        "license":  "CC BY-SA 4.0",
+        "licenseUrl":  "https://creativecommons.org/licenses/by-sa/4.0",
+        "source":  "https://commons.wikimedia.org/wiki/File:Naksan_Temple.jpg",
+        "original":  "https://upload.wikimedia.org/wikipedia/commons/1/1a/Naksan_Temple.jpg?utm_source=commons.wikimedia.org\u0026utm_campaign=imageinfo\u0026utm_content=original",
+        "changes":  "Resized by Wikimedia thumbnail service; displayed with CSS crop; original file unmodified locally."
+    },
+    {
+        "id":  "sokcho-market",
+        "place":  "속초관광수산시장",
+        "path":  "places/sokcho-market.jpg",
+        "title":  "File:Sokcho Central Market 01.jpg",
+        "author":  "Bernard Gagnon",
+        "license":  "CC0",
+        "licenseUrl":  "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+        "source":  "https://commons.wikimedia.org/wiki/File:Sokcho_Central_Market_01.jpg",
+        "original":  "https://upload.wikimedia.org/wikipedia/commons/0/08/Sokcho_Central_Market_01.jpg?utm_source=commons.wikimedia.org\u0026utm_campaign=imageinfo\u0026utm_content=original",
+        "changes":  "Resized by Wikimedia thumbnail service; displayed with CSS crop; original file unmodified locally."
+    },
+    {
+        "id":  "hangyeryeong",
+        "place":  "한계령 휴게소 얼굴바위",
+        "path":  "places/hangyeryeong.jpg",
+        "title":  "Geology of South Korea - 한계령 휴게소 얼굴바위 (2756453091).jpg",
+        "author":  "Seongbin Im",
+        "license":  "CC BY-SA 2.0",
+        "licenseUrl":  "https://creativecommons.org/licenses/by-sa/2.0/",
+        "source":  "https://commons.wikimedia.org/wiki/File:Geology_of_South_Korea_-_한계령_휴게소_얼굴바위_(2756453091).jpg",
+        "original":  "https://live.staticflickr.com/3231/2756453091_a8f49dd0ef_o.jpg",
+        "changes":  "Original downloaded from Flickr; displayed with CSS crop."
+    }
+]
