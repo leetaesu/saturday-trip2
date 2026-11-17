@@ -200,3 +200,15 @@ describe('PDF 생성기', () => {
     assert.ok(text.endsWith('%%EOF\n'));
   });
 });
+
+describe('카카오톡 및 소셜 공유 썸네일 메타데이터', () => {
+  it('index.html에 절대 URL og:image 메타 태그가 있고 public/og-share.jpg가 5MB 이하이다', () => {
+    const html = fs.readFileSync(path.resolve('index.html'), 'utf8');
+    assert.ok(html.includes('property="og:image" content="https://leetaesu.github.io/saturday-trip2/og-share.jpg"'));
+    assert.ok(html.includes('property="og:image:width" content="1200"'));
+    assert.ok(html.includes('property="og:image:height" content="630"'));
+    assert.ok(html.includes('name="twitter:card" content="summary_large_image"'));
+    const stat = fs.statSync(path.resolve('public', 'og-share.jpg'));
+    assert.ok(stat.size > 10_000 && stat.size < 5 * 1024 * 1024);
+  });
+});

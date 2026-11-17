@@ -18,6 +18,7 @@ import {
   Plus,
   RotateCcw,
   Settings2,
+  Share2,
   ShieldCheck,
   Sparkles,
   Trash2,
@@ -365,6 +366,31 @@ export default function App() {
     setNotice(`${item.name} 일정을 ${course}코스 ${day + 1}일차에 넣었어요. 이동 확보 시간을 확인해 주세요.`);
   }
 
+  async function shareTripLink() {
+    const shareUrl = location.origin.startsWith('http')
+      ? `${location.origin}${location.pathname}`
+      : 'https://leetaesu.github.io/saturday-trip2/';
+    const shareData = {
+      title: '엄마의 칠순여행 · 함께라서 좋은 날',
+      text: '2026.11.22(일)~23(월) 양양·속초·오색온천 1박 2일 가족 여행 일정 안내',
+      url: shareUrl,
+    };
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setNotice('여행 주소를 복사했어요. 카카오톡에 붙여넣어 보세요.');
+    } catch {
+      setNotice(`주소를 복사해 공유해 주세요: ${shareUrl}`);
+    }
+  }
+
   function addCustomPackingItem(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const cleaned = customItemInput.trim().slice(0, 80);
@@ -628,7 +654,7 @@ export default function App() {
                   <span>{memories.length ? `${memories.length}건 저장됨` : '사진과 추억 남기기'}</span>
                 </button>
                 <button
-                  className="shortcut-wide"
+                  className="shortcut-warm"
                   onClick={() => {
                     location.hash = 'map';
                     setTab('map');
@@ -637,7 +663,12 @@ export default function App() {
                 >
                   <Utensils />
                   <strong>식당 · 카페 추천</strong>
-                  <span>양양·오색·속초 {foodRecommendations.length}곳 바로 보기</span>
+                  <span>양양·오색·속초 {foodRecommendations.length}곳 보기</span>
+                </button>
+                <button className="shortcut-share" onClick={shareTripLink}>
+                  <Share2 />
+                  <strong>가족에게 공유</strong>
+                  <span>카톡·링크로 일정 함께 보기</span>
                 </button>
               </div>
 

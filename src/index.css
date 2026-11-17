@@ -225,7 +225,8 @@ h1, h2, h3, p { margin: 0; }
   border: 1px solid #e4d7c6;
   color: #5d4835;
 }
-.home-shortcuts .shortcut-wide { grid-column: 1 / -1; background: #f8e7d8; border-color: #ead0bb; color: #6c3b23; }
+.home-shortcuts .shortcut-warm { background: #f8e7d8; border-color: #ead0bb; color: #6c3b23; }
+.home-shortcuts .shortcut-share { background: #ecf0e2; border-color: #d6ddc3; color: #465732; }
 .home-shortcuts strong { font-size: 18px; }
 .home-shortcuts span { font-size: 13.5px; opacity: .9; }
 
