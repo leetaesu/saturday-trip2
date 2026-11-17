@@ -32,7 +32,7 @@ npm run preview    # 프로덕션 빌드 미리보기 (오프라인 캐시 테�
 - **지도 및 방문 후보 안내**:
   - 위치 권한 없이 사용 가능
   - 네이버지도는 장소 검색 연결, 카카오맵은 OpenStreetMap 확인 좌표가 있을 때만 공식 차량 길찾기(`/link/by/car/`) 또는 위치(`/link/to/`)를 사용하고 미확보 장소는 검색(`/link/search/`)으로 연결
-  - `public/places/recommendations.json` 기반 식당·카페 후보(감나무식당, 88생선구이, 김영애할머니순두부 본점, 하조대커피 낙산점, 원파인데이) 및 숙소·온천 안내
+  - `public/places/recommendations.json`과 권역별 확인 후보 12곳(양양·낙산, 오색, 속초 식당·카페, 지역/종류 필터 및 전화·지도 검색 연결) 및 숙소·온천 안내
 - **준비물 · 여행기록 · PDF 앨범**:
   - 카테고리별 준비물 체크
   - 칠순 축하 메시지, 사진 압축 업로드, 장소별 메모 저장·수정·삭제
@@ -56,7 +56,7 @@ npm run preview    # 프로덕션 빌드 미리보기 (오프라인 캐시 테�
 - `src/engine.ts`: 시간 계산, 편안 모드·무릎 대체, 중복 왕복 방지, 지도 링크, 저장 데이터 검증·복원
 - `src/storage.ts`: `localStorage` 상태 읽기, `IndexedDB` 사진·메모 CRUD, 사진 압축
 - `src/pdf.ts`: 캔버스 기반 한글·사진 렌더링 및 JPEG-backed A4 PDF 생성
-- `src/index.css`: 모바일·데스크톱 반응형 스타일
+- `src/index.css`: 480px 기준 모바일 전용 단일 컬럼 및 하단 탭 고정 스타일
 - `vite.config.ts`: 빌드 시 오프라인 Service Worker(`sw.js`) 생성
 - `.github/workflows/deploy.yml`: `main` 브랜치 푸시 시 GitHub Pages 자동 빌드·배포
 - `public/places/credits.json`, `public/places/recommendations.json`: 참고 사진 저작권·출처 및 식당·카페 후보 원본 데이터

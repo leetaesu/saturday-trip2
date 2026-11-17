@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowDownUp, ArrowRight, Backpack, CalendarDays, Camera, Check, ChevronDown, Clock3, Download, Heart, Home, MapPin, Navigation, ParkingCircle, Phone, Plus, Settings2, ShieldCheck, Trash2, Waves, X } from 'lucide-react';
+import { ArrowDownUp, ArrowRight, Backpack, CalendarDays, Camera, Check, ChevronDown, Clock3, Download, Heart, Home, MapPin, Navigation, ParkingCircle, Phone, Plus, Settings2, ShieldCheck, Trash2, Utensils, Waves, X } from 'lucide-react';
 import { courses, foodRecommendations, packingGroups, placeInfo, places, resolvePlaceId, sourceLinks } from './trip';
 import type { CourseId, Stop, TabId, TripState } from './trip';
 import { clock, effectiveCourse, foldedComfortStops, hasCoord, isReferencePoint, kakaoLink, moveStop, naverLink, parseTime, routeLink, routeLinkMode, routeStops, schedule, setStartAt } from './engine';
@@ -377,60 +377,42 @@ export default function App() {
         </Modal>
       )}
 
-      <header className="topbar">
-        <a href="#home" className="brand" onClick={() => go('home')}>
-          <Heart size={23} fill="currentColor" />
-          <span>엄마 칠순여행 ♨️</span>
-        </a>
-        <span className="top-date">11.22 일 — 23 월</span>
-        <button className="cover-button" onClick={() => setIntro(true)}>
-          가족사진
-        </button>
-      </header>
+      <div className="mobile-shell">
+        <header className="topbar">
+          <a href="#home" className="brand" onClick={() => go('home')}>
+            <Heart size={22} fill="currentColor" />
+            <span>엄마 칠순여행 ♨️</span>
+          </a>
+          <button className="cover-button" onClick={() => setIntro(true)}>
+            가족사진
+          </button>
+        </header>
 
-      <div className="app-layout">
-        <aside className="trip-cover">
-          <div className="cover-art">
-            <img src={bannerAsset} alt="베이지 캡모자와 선글라스를 쓴 동생과 가족이 함께 웃는 칠순여행 배너 일러스트" />
-          </div>
-          <div className="cover-copy">
-            <p className="eyebrow">우리 가족의 행복한 1박 2일</p>
-            <h1>
-              엄마 칠순여행<span>♥</span>
-            </h1>
-            <p className="cover-sub">
-              많이 걷지 않고,
-              <br />
-              좋아하는 것들로 채운 이틀.
-            </p>
-            <div className="trip-tags">
-              <span>
-                <CalendarDays size={17} />
-                11.22(일) — 23(월)
-              </span>
-              <span>춘천 출발 · 오전 8시</span>
-            </div>
-            <div className="family-line">엄마 · 막내이모 · 형 · 나</div>
-            <div className="hotel-mini">
-              <span className="tiny-label">목적지 · 오늘의 쉼터</span>
-              <strong>오색그린야드호텔</strong>
-              <span>1박 2일 · 4인 · 자가용 여행</span>
-            </div>
-          </div>
-          <p className="cover-footer">함께하는 시간이 가장 소중해요.</p>
-        </aside>
+        <main id="main-content" className="app-layout">
+          {tab === 'home' && (
+            <section className="trip-cover" aria-label="여행 소개 배너">
+              <div className="cover-art">
+                <img src={bannerAsset} alt="베이지 캡모자와 선글라스를 쓴 동생과 가족이 함께 웃는 칠순여행 배너 일러스트" />
+              </div>
+              <div className="cover-copy">
+                <p className="eyebrow">우리 가족의 행복한 1박 2일</p>
+                <h1>
+                  엄마 칠순여행<span>♥</span>
+                </h1>
+                <div className="trip-tags">
+                  <span>
+                    <CalendarDays size={15} />
+                    11.22(일) — 23(월)
+                  </span>
+                  <span>춘천 오전 8시 출발</span>
+                  <span>오색그린야드호텔</span>
+                </div>
+                <p className="family-line">엄마 · 막내이모 · 형 · 나 · 4인 자가용 여행</p>
+              </div>
+            </section>
+          )}
 
-        <main id="main-content">
-          <nav className="desktop-tabs" aria-label="여행 메뉴">
-            {nav.map(item => (
-              <button key={item.id} onClick={() => go(item.id)} aria-current={tab === item.id ? 'page' : undefined}>
-                <item.icon size={20} />
-                {item.label}
-              </button>
-            ))}
-          </nav>
-
-          {comfortControl}
+          {['home', 'plan', 'map'].includes(tab) && comfortControl}
 
           {(!online || saveError) && (
             <div className="notice" role="status">
@@ -475,6 +457,18 @@ export default function App() {
                   <Camera />
                   <strong>가족 여행 사진</strong>
                   <span>사진과 추억 남기기</span>
+                </button>
+                <button
+                  className="shortcut-wide"
+                  onClick={() => {
+                    location.hash = 'map';
+                    setTab('map');
+                    setTimeout(() => document.getElementById('food-guide')?.scrollIntoView({ behavior: 'smooth' }), 80);
+                  }}
+                >
+                  <Utensils />
+                  <strong>식당 · 카페 추천</strong>
+                  <span>양양·오색·속초 {foodRecommendations.length}곳 바로 보기</span>
                 </button>
               </div>
               <div className="gentle-note">
@@ -948,16 +942,16 @@ export default function App() {
             <span>{offlineReady ? '오프라인 준비 완료' : import.meta.env.DEV ? '개발 미리보기 · 오프라인 저장은 빌드에서 동작' : '오프라인 저장 준비 중'}</span>
           </footer>
         </main>
-      </div>
 
-      <nav className="bottom-nav" aria-label="여행 메뉴">
-        {nav.map(item => (
-          <button key={item.id} onClick={() => go(item.id)} aria-current={tab === item.id ? 'page' : undefined}>
-            <item.icon size={23} />
-            <span>{item.label}</span>
-          </button>
-        ))}
-      </nav>
+        <nav className="bottom-nav" aria-label="여행 메뉴">
+          {nav.map(item => (
+            <button key={item.id} onClick={() => go(item.id)} aria-current={tab === item.id ? 'page' : undefined}>
+              <item.icon size={23} />
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </nav>
+      </div>
 
       {notice && (
         <div className="toast" role="status">
@@ -1313,15 +1307,36 @@ function HotelInfo() {
 }
 
 function FoodGuide() {
+  const [area, setArea] = useState<'전체' | '양양·낙산' | '오색' | '속초'>('전체');
+  const [kind, setKind] = useState<'전체' | '식당' | '카페'>('전체');
+  const filtered = foodRecommendations.filter(
+    item => (area === '전체' || item.area === area) && (kind === '전체' || item.kind === kind),
+  );
   return (
-    <div className="food-guide">
+    <div id="food-guide" className="food-guide">
       <div className="subheading">
         <p className="eyebrow">따뜻한 음식과 앉아서 쉬는 시간</p>
-        <h3>식당 · 카페 후보</h3>
+        <h3>식당 · 카페 추천 후보</h3>
       </div>
-      {foodRecommendations.map(item => (
+      <div className="course-pills" role="group" aria-label="지역별 보기">
+        {(['전체', '양양·낙산', '오색', '속초'] as const).map(value => (
+          <button key={value} type="button" aria-pressed={area === value} onClick={() => setArea(value)}>
+            {value}
+          </button>
+        ))}
+      </div>
+      <div className="course-pills kind-pills" role="group" aria-label="종류별 보기">
+        {(['전체', '식당', '카페'] as const).map(value => (
+          <button key={value} type="button" aria-pressed={kind === value} onClick={() => setKind(value)}>
+            {value === '식당' ? '🍲 식당' : value === '카페' ? '☕ 카페' : '모두 보기'}
+          </button>
+        ))}
+      </div>
+      {filtered.map(item => (
         <article className="info-card" key={item.name}>
-          <span className="place-label">{item.sub}</span>
+          <span className="place-label">
+            {item.kind === '식당' ? '🍲' : '☕'} {item.sub}
+          </span>
           <h3>{item.name}</h3>
           <p>{item.description}</p>
           {item.address && <p className="muted">{item.address}</p>}
@@ -1342,6 +1357,11 @@ function FoodGuide() {
           <Links place={item.query} />
         </article>
       ))}
+      {!filtered.length && (
+        <div className="info-card">
+          <p className="muted">오색 일대는 한식당 중심이라 카페는 호텔 내부 라운지(033-670-1000)나 양양·속초 이동 시 들르는 것을 추천해요.</p>
+        </div>
+      )}
       <p className="muted">주변 이동 10~20분 이내를 우선하되 실제 소요시간은 지도 앱에서 확인해요. 긴 줄보다 바로 앉을 수 있는 식당이 좋아요.</p>
     </div>
   );
