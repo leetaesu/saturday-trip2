@@ -23,14 +23,15 @@ const photoPaths: Record<string, string> = {
   temple: 'naksansa',
   market: 'sokcho-market',
   mountain: 'hangyeryeong',
-};
-const artIcons: Record<string, string> = {
-  meal: '🍲',
-  cafe: '☕',
-  hotel: '♨️',
-  rest: '🚙',
-  yangyang: '🛍️',
-  sea: '🌊',
+  sea: 'yeonggeumjeong',
+  yangyang: 'yangyang-eup',
+  hotel: 'osaek',
+  rest: 'hongcheon-rest',
+  hwangtae: 'hwangtae',
+  sundubu: 'sundubu',
+  saengseon: 'saengseon',
+  sanchae: 'sanchae',
+  cafe: 'cafe-latte',
 };
 const CREDIT = [
   ['낙산해변', 'Grapesurgeon', 'CC BY-SA 4.0', 'https://commons.wikimedia.org/wiki/File:Naksan_Beach_01.jpg', 'https://creativecommons.org/licenses/by-sa/4.0/'],
@@ -38,6 +39,15 @@ const CREDIT = [
   ['낙산사', 'Choism97', 'CC BY-SA 4.0', 'https://commons.wikimedia.org/wiki/File:Naksan_Temple.jpg', 'https://creativecommons.org/licenses/by-sa/4.0/'],
   ['속초시장', 'Bernard Gagnon', 'CC0', 'https://commons.wikimedia.org/wiki/File:Sokcho_Central_Market_01.jpg', 'https://creativecommons.org/publicdomain/zero/1.0/'],
   ['한계령', 'Seongbin Im', 'CC BY-SA 2.0', 'https://commons.wikimedia.org/wiki/File:Geology_of_South_Korea_-_한계령_휴게소_얼굴바위_(2756453091).jpg', 'https://creativecommons.org/licenses/by-sa/2.0/'],
+  ['영금정', 'Mobius6', 'CC BY-SA 4.0', 'https://commons.wikimedia.org/wiki/File:Yeonggeumjeong_20221209_003.jpg', 'https://creativecommons.org/licenses/by-sa/4.0/'],
+  ['양양읍 전경', 'Academy of Korean Studies', 'KOGL Type 1', 'https://commons.wikimedia.org/wiki/File:Panoramic_view_of_Yangyang-eup.jpg', 'http://www.kogl.or.kr/info/licenseType1.do'],
+  ['오색약수', '문화재청', 'KOGL Type 1', 'https://commons.wikimedia.org/wiki/File:%EC%96%91%EC%96%91_%EC%98%A4%EC%83%89%EB%A6%AC_%EC%98%A4%EC%83%89%EC%95%BD%EC%88%98_(%EC%B2%9C%EC%97%B0%EA%B8%B0%EB%85%90%EB%AC%BC_%EC%A0%9C529%ED%98%B8).jpg', 'http://www.kogl.or.kr/info/licenseType1.do'],
+  ['서울양양고속도로 홍천휴게소', 'Jhcbs1019', 'CC BY-SA 4.0', 'https://commons.wikimedia.org/wiki/File:Seoul-Yangyang_Expwy_Hongcheon_SA_Entrance(Yangyang_Dir)_1.jpg', 'https://creativecommons.org/licenses/by-sa/4.0/'],
+  ['황태해장국', 'Jinho Jung', 'CC BY-SA 2.0', 'https://commons.wikimedia.org/wiki/File:Hwangtae-haejang-guk.jpg', 'https://creativecommons.org/licenses/by-sa/2.0/'],
+  ['순두부', '차차PD', 'CC BY 4.0', 'https://commons.wikimedia.org/wiki/File:Sun-dubu_4.jpg', 'https://creativecommons.org/licenses/by/4.0/'],
+  ['생선구이', 'karendotcom127', 'CC BY 2.0', 'https://commons.wikimedia.org/wiki/File:Korean.cuisine-Saengseon_gui-01.jpg', 'https://creativecommons.org/licenses/by/2.0/'],
+  ['산채식', 'Real rism', 'CC0', 'https://commons.wikimedia.org/wiki/File:Sanchae_Bibimbap_in_homemade_style.jpg', 'http://creativecommons.org/publicdomain/zero/1.0/deed.en'],
+  ['카페 라떼', 'Alayna the Extravagant', 'CC BY-SA 3.0', 'https://commons.wikimedia.org/wiki/File:Cafe_Latte.jpg', 'https://creativecommons.org/licenses/by-sa/3.0/'],
 ];
 
 function Links({ place }: { place: string }) {
@@ -58,29 +68,43 @@ function Links({ place }: { place: string }) {
   );
 }
 
-function Photo({ place }: { place: string }) {
+function photoCaption(photoKey: string): string {
+  if (photoKey === 'mountain') return '2008년 여름 참고 사진 · 현재 도로·결빙 상태 아님';
+  if (photoKey === 'yangyang') return '양양읍 전경 참고 사진 · 시장 점포 실사진 아님';
+  if (photoKey === 'hotel') return '오색 일대 참고 사진 · 호텔 내부 실사진 아님';
+  if (photoKey === 'rest') return '서울양양고속도로 참고 사진 · 실제 경로에 맞춰 휴게소 선택';
+  if (['hwangtae', 'sundubu', 'saengseon', 'sanchae', 'cafe'].includes(photoKey)) {
+    return '대표 메뉴·음료 참고 사진 · 실제 매장 사진 아님';
+  }
+  return '참고 사진 · 현재 계절·현장과 다를 수 있어요';
+}
+
+function Photo({ place, kind, title }: { place: string; kind?: Stop['kind']; title?: string }) {
   const info = placeInfo(place);
-  const path = photoPaths[info.photo];
+  let photoKey = info.photo;
+  if (resolvePlaceId(place) === 'hotel') {
+    if (kind === 'meal') photoKey = title?.includes('아침') ? 'sundubu' : 'sanchae';
+    else if (kind === 'cafe') photoKey = 'cafe';
+  }
+  const path = photoPaths[photoKey];
   if (path) {
     return (
       <figure className="photo-figure">
         <img
           className="destination-photo"
           src={`${import.meta.env.BASE_URL}places/${path}.jpg`}
-          alt={`${info.name} 참고 사진 · 현재 계절과 다를 수 있어요`}
+          alt={`${info.name} 참고 사진`}
           loading="lazy"
         />
-        <figcaption className="photo-caption">
-          {info.photo === 'mountain' ? '2008년 여름 참고 사진 · 현재 도로·결빙 상태 아님' : '참고 사진 · 현재 계절·현장과 다를 수 있어요'}
-        </figcaption>
+        <figcaption className="photo-caption">{photoCaption(photoKey)}</figcaption>
       </figure>
     );
   }
   return (
-    <div className={`place-art art-${info.photo}`} aria-label={`${info.name} 안내 그림 (실제 사진 아님)`}>
-      <span>{artIcons[info.photo] ?? '🌷'}</span>
-      <small>{info.photo === 'hotel' ? '오늘의 쉼터 · 안내 그림' : `${info.name} · 안내 그림`}</small>
-    </div>
+    <figure className="photo-figure">
+      <img className="destination-photo" src={bannerAsset} alt="우리 가족 칠순여행 배너 일러스트" loading="lazy" />
+      <figcaption className="photo-caption">우리 가족 여행 일러스트</figcaption>
+    </figure>
   );
 }
 
@@ -593,7 +617,15 @@ export default function App() {
                       description: '5~10분 구경하고 앉아서 쉬어요. 점심은 시장 근처 입식 식당에서 먹어요.',
                     };
                     next.splice(insertAt, 0, visit);
-                    if (at >= 0) next[insertAt + 1] = { ...next[insertAt + 1], transfer: 0, place: 'market' };
+                    if (at >= 0) {
+                      next[insertAt + 1] = {
+                        ...next[insertAt + 1],
+                        transfer: 0,
+                        place: 'mlunch',
+                        title: '88생선구이에서 점심 (대안: 왕가수라청)',
+                        description: '속초 중앙시장 인근 입식 식당 후보예요. 대기가 길면 왕가수라청 등 가까운 입식 식당으로 변경해요.',
+                      };
+                    }
                     changeStops(next);
                     setNotice('시장 구경을 넣었어요. 이동 확보 시간과 점심 장소를 확인해 주세요.');
                   }}
@@ -620,7 +652,7 @@ export default function App() {
                           <h3>{stop.title}</h3>
                           <span>상세 · 수정 ›</span>
                         </button>
-                        {['visit', 'hotel', 'cafe', 'meal'].includes(stop.kind) && <Photo place={stop.place} />}
+                        {['visit', 'hotel', 'cafe', 'meal', 'rest'].includes(stop.kind) && <Photo place={stop.place} kind={stop.kind} title={stop.title} />}
                         <p>{stop.description}</p>
                         <div className="stop-metrics">
                           <span>🚗 이동 확보 {stop.transfer}분</span>
@@ -1100,6 +1132,11 @@ export default function App() {
           .map(([id, place]) => (
             <option key={id} value={place.name} />
           ))}
+        {foodRecommendations
+          .filter(rec => !Object.values(places).some(place => place.query === rec.query))
+          .map(rec => (
+            <option key={rec.name} value={rec.query} />
+          ))}
       </datalist>
     </>
   );
@@ -1144,7 +1181,7 @@ function StopEditor({
         );
       }}
     >
-      <Photo place={row.stop.place} />
+      <Photo place={row.stop.place} kind={row.stop.kind} title={row.stop.title} />
       <p className="muted">
         {row.stop.burden} · 도보 {row.stop.walk}분 이내 목표 (추정)
         {row.stop.minutes !== raw.minutes ? ` · 편안 모드 적용 실제 ${row.stop.minutes}분` : ''}

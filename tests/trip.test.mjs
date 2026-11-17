@@ -47,6 +47,18 @@ describe('장소 및 코스 데이터', () => {
       assert.ok(names.has(rec.name), `${rec.name} missing from foodRecommendations`);
     }
   });
+
+  it('모든 참고 사진 파일과 코스별 추천 식당 연결이 유효하다', () => {
+    const credits = JSON.parse(fs.readFileSync(path.resolve('public/places/credits.json'), 'utf8'));
+    for (const c of credits) {
+      assert.ok(fs.existsSync(path.resolve('public', c.path)), `Missing image file public/${c.path}`);
+    }
+    const s = trip.initialState();
+    assert.ok(s.schedules.A[0].some(stop => stop.place === 'lunch' && stop.title.includes('감나무식당')));
+    assert.ok(s.schedules.B[0].some(stop => stop.place === 'olunch' && stop.title.includes('점봉산자연산채')));
+    assert.ok(s.schedules.C[0].some(stop => stop.place === 'slunch' && stop.title.includes('김영애할머니순두부')));
+    assert.ok(s.schedules.C[1].some(stop => stop.place === 'mlunch' && stop.title.includes('88생선구이')));
+  });
 });
 
 describe('일정 계산, 편안 모드, 무릎 보호 및 코스 대체', () => {

@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({ base: './', plugins: [react(), tailwindcss(), {
   name: 'trip-offline-cache',
   generateBundle(_options, bundle) {
-    const files = ['./', './index.html', './family.png', './family-banner.png', ...['naksan-beach','sokcho-beach','naksansa','sokcho-market','hangyeryeong'].map(name => `./places/${name}.jpg`), ...Object.keys(bundle).map(name => `./${name}`)];
+    const files = ['./', './index.html', './family.png', './family-banner.png', ...['naksan-beach','sokcho-beach','naksansa','sokcho-market','hangyeryeong','yeonggeumjeong','yangyang-eup','osaek','hongcheon-rest','hwangtae','sundubu','saengseon','sanchae','cafe-latte'].map(name => `./places/${name}.jpg`), ...Object.keys(bundle).map(name => `./${name}`)];
     this.emitFile({ type: 'asset', fileName: 'sw.js', source: `
 const PREFIX = 'mom70-' + new URL(self.registration.scope).pathname + '-';
 const CACHE = PREFIX + '${Date.now()}';
