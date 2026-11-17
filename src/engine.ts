@@ -217,6 +217,16 @@ export function routeStops(rows: Scheduled[]) {
   );
 }
 
+export function tripStatusLabel(today = new Date()): string {
+  const startDay = new Date(2026, 10, 22);
+  const currentDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const diffDays = Math.round((startDay.getTime() - currentDay.getTime()) / 86400000);
+  if (diffDays > 0) return `D-${diffDays} · 11.22(일) 출발`;
+  if (diffDays === 0) return 'D-DAY · 출발하는 날 ♥';
+  if (diffDays === -1) return '여행 둘째 날 · 11.23(월)';
+  return '함께 다녀온 소중한 이틀 ♥';
+}
+
 const burdens = ['매우 적음', '적음', '보통', '많음'];
 export function restoreState(input: unknown): TripState {
   const base = initialState();
@@ -234,6 +244,14 @@ export function restoreState(input: unknown): TripState {
     };
   }
   if (Array.isArray(value.checks)) base.checks = value.checks.filter((x): x is string => typeof x === 'string').slice(0, 100);
+  if (Array.isArray(value.customPacking)) {
+    const seen = new Set<string>();
+    base.customPacking = value.customPacking
+      .filter((x): x is string => typeof x === 'string' && !!x.trim())
+      .map(x => x.trim().slice(0, 80))
+      .filter(x => !seen.has(x) && !!seen.add(x))
+      .slice(0, 50);
+  }
   if (typeof value.message === 'string') base.message = value.message.slice(0, 5000);
   for (const course of ['A', 'B', 'C', 'D'] as const) {
     for (const day of [0, 1] as const) {

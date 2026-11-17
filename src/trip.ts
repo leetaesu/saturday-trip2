@@ -5,7 +5,7 @@ export type Burden = '매우 적음' | '적음' | '보통' | '많음';
 export type Kind = 'start' | 'rest' | 'visit' | 'meal' | 'cafe' | 'hotel' | 'spa' | 'checkout' | 'celebrate' | 'home';
 export interface Stop { id: string; place: string; title: string; description: string; kind: Kind; minutes: number; transfer: number; walk: number; burden: Burden; stairs?: boolean; optional?: boolean; skipped?: boolean; done?: boolean; earliest?: number; parking?: string; }
 export interface Settings { course: CourseId; comfort: boolean; knee: boolean; road: 'unknown' | 'open' | 'closed'; starts: [number, number]; }
-export interface TripState { version: 2; settings: Settings; schedules: Record<CourseId, [Stop[], Stop[]]>; checks: string[]; message: string; }
+export interface TripState { version: 2; settings: Settings; schedules: Record<CourseId, [Stop[], Stop[]]>; checks: string[]; customPacking?: string[]; message: string; }
 export const places = {
   chuncheon: { name: '춘천 출발지', query: '춘천시', parking: '집에서 짐을 싣고 출발해요.', photo: 'family' },
   rest: { name: '서울양양고속도로 휴게소 (홍천·내린천)', query: '', parking: '실제 내비 경로에 있는 휴게소를 골라요.', photo: 'rest' },
@@ -99,7 +99,11 @@ function makeSchedules(): Record<CourseId, [Stop[], Stop[]]> {
   ];
   return { A: [a, nextDay()], B: [b, nextDay()], C: [c, nextDay(true)], D: [d, nextDay()] };
 }
-export function initialState(): TripState { counter = 0; return { version: 2, settings: { course: 'A', comfort: true, knee: false, road: 'unknown', starts: [480, 480] }, schedules: makeSchedules(), checks: [], message: '' }; }
+export function initialState(): TripState { counter = 0; return { version: 2, settings: { course: 'A', comfort: true, knee: false, road: 'unknown', starts: [480, 480] }, schedules: makeSchedules(), checks: [], customPacking: [], message: '' }; }
+export function courseScheduleDefaults(course: CourseId): [Stop[], Stop[]] {
+  counter = 0;
+  return makeSchedules()[course];
+}
 export function resolvePlaceId(input: string): string {
   const trimmed = input.trim();
   if (Object.prototype.hasOwnProperty.call(places, trimmed)) return trimmed;
@@ -116,6 +120,7 @@ export interface FoodRecommendation {
   name: string;
   area: '양양·낙산' | '오색' | '속초';
   kind: '식당' | '카페';
+  photo: 'hwangtae' | 'sundubu' | 'saengseon' | 'sanchae' | 'cafe';
   sub: string;
   query: string;
   description: string;
@@ -129,6 +134,7 @@ export const foodRecommendations: FoodRecommendation[] = [
     name: '감나무식당',
     area: '양양·낙산',
     kind: '식당',
+    photo: 'hwangtae',
     sub: '양양읍 · 황태국밥·황태해장국·황태구이',
     query: '양양 감나무식당',
     address: '강원특별자치도 양양군 양양읍 안산1길 73-6',
@@ -141,6 +147,7 @@ export const foodRecommendations: FoodRecommendation[] = [
     name: '낙산전북팔도식당',
     area: '양양·낙산',
     kind: '식당',
+    photo: 'hwangtae',
     sub: '낙산해변 인근 · 물곰탕·생선지리 백반',
     query: '낙산전북팔도식당',
     address: '강원특별자치도 양양군 강현면 낙산사로 37',
@@ -151,6 +158,7 @@ export const foodRecommendations: FoodRecommendation[] = [
     name: '범바우막국수 양양본점',
     area: '양양·낙산',
     kind: '식당',
+    photo: 'sanchae',
     sub: '강현면 · 메밀막국수·한식',
     query: '범바우막국수 양양본점',
     address: '강원특별자치도 양양군 강현면 진미로 519',
@@ -161,6 +169,7 @@ export const foodRecommendations: FoodRecommendation[] = [
     name: '하조대커피 낙산점',
     area: '양양·낙산',
     kind: '카페',
+    photo: 'cafe',
     sub: '낙산해변 · 카페',
     query: '하조대커피 낙산점',
     source: 'https://korean.visitkorea.or.kr/detail/rem_detail.do?cotid=0fa421e0-bee6-4146-8fa0-dc626b3a7097',
@@ -171,6 +180,7 @@ export const foodRecommendations: FoodRecommendation[] = [
     name: '바다뷰제빵소',
     area: '양양·낙산',
     kind: '카페',
+    photo: 'cafe',
     sub: '낙산·강현 해안 · 오션뷰 베이커리 카페',
     query: '양양 바다뷰제빵소',
     address: '강원특별자치도 양양군 강현면 동해대로 3296',
@@ -181,6 +191,7 @@ export const foodRecommendations: FoodRecommendation[] = [
     name: '점봉산자연산채',
     area: '오색',
     kind: '식당',
+    photo: 'sanchae',
     sub: '오색 호텔 인근 · 산채정식·나물 반찬',
     query: '양양 점봉산자연산채',
     address: '강원특별자치도 양양군 서면 대청봉길 58-62',
@@ -191,6 +202,7 @@ export const foodRecommendations: FoodRecommendation[] = [
     name: '약수식당',
     area: '오색',
     kind: '식당',
+    photo: 'sanchae',
     sub: '오색약수터 인근 · 산채백반·돌솥밥·황태더덕구이',
     query: '양양 서면 약수식당',
     address: '강원특별자치도 양양군 서면 약수길 23',
@@ -201,6 +213,7 @@ export const foodRecommendations: FoodRecommendation[] = [
     name: '김영애할머니순두부 본점',
     area: '속초',
     kind: '식당',
+    photo: 'sundubu',
     sub: '속초 학사평 · 국산콩 순두부',
     query: '김영애할머니순두부 본점',
     address: '강원특별자치도 속초시 원암학사평길 183',
@@ -211,6 +224,7 @@ export const foodRecommendations: FoodRecommendation[] = [
     name: '88생선구이',
     area: '속초',
     kind: '식당',
+    photo: 'saengseon',
     sub: '속초 중앙시장 인근 · 생선구이 모듬정식',
     query: '속초 88생선구이',
     address: '강원특별자치도 속초시 중앙부두길 71',
@@ -223,6 +237,7 @@ export const foodRecommendations: FoodRecommendation[] = [
     name: '왕가수라청',
     area: '속초',
     kind: '식당',
+    photo: 'hwangtae',
     sub: '속초 · 황태구이·황태해장국',
     query: '속초 왕가수라청',
     address: '강원특별자치도 속초시 관광로 415',
@@ -233,6 +248,7 @@ export const foodRecommendations: FoodRecommendation[] = [
     name: '보사노바 커피로스터스 속초점',
     area: '속초',
     kind: '카페',
+    photo: 'cafe',
     sub: '속초해변 · 오션뷰 베이커리 카페',
     query: '보사노바 커피로스터스 속초점',
     address: '강원특별자치도 속초시 해오름로 161',
@@ -243,6 +259,7 @@ export const foodRecommendations: FoodRecommendation[] = [
     name: '원파인데이',
     area: '속초',
     kind: '카페',
+    photo: 'cafe',
     sub: '속초해변 · 카페',
     query: '속초 원파인데이',
     address: '강원특별자치도 속초시 청호로2길 54',
@@ -250,6 +267,17 @@ export const foodRecommendations: FoodRecommendation[] = [
     sourceLabel: '한국관광공사 속초 바다 코스',
     description: '속초해변 인근 조용한 휴식 후보예요. 영업·휴무·주차·1층 좌석·계단 없는 출입구는 방문 전 확인이 필요해요.',
   },
+];
+export const celebrationTemplates = [
+  '엄마, 칠순 진심으로 축하드려요! 오래오래 건강하고 행복해요 ♥',
+  '늘 가족 먼저 챙겨주신 엄마, 이번 여행은 천천히 쉬면서 즐겨요.',
+  '막내이모와 우리 넷이 함께 떠나는 1박 2일, 오늘이 가장 소중한 날이에요 🌸',
+];
+export const kneeCareTips = [
+  '식당·카페는 좌식보다 의자에 앉는 입식 좌석과 계단 없는 1층 입구를 우선 골라요.',
+  '호텔·식당·바다 데크 도착 시 입구에서 엄마와 이모가 먼저 내리고, 주차를 마친 뒤 합류해요.',
+  '11월 22~23일은 양양 오일장(끝자리 4·9일)이 아닌 상설 점포 구경일이에요. 5~10분 걷고 앉아서 쉬어요.',
+  '온천욕 전후에는 수분을 챙기고, 물기 있는 바닥에서는 가족이 양옆에서 동행해요.',
 ];
 export const packingGroups = [
   { title: '가족 공통', items: ['휴대폰 충전기', '보조배터리', '칫솔·치약·세면도구', '갈아입을 옷', '따뜻한 외투·목도리·장갑', '예약확정 문자·신분증', '차량 점검·차량용 충전기', '물·간식·작은 담요'] },

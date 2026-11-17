@@ -1,8 +1,60 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowDownUp, ArrowRight, Backpack, CalendarDays, Camera, Check, ChevronDown, Clock3, Download, Heart, Home, MapPin, Navigation, ParkingCircle, Phone, Plus, Settings2, ShieldCheck, Trash2, Utensils, Waves, X } from 'lucide-react';
-import { courses, foodRecommendations, packingGroups, placeInfo, places, resolvePlaceId, sourceLinks } from './trip';
-import type { CourseId, Stop, TabId, TripState } from './trip';
-import { clock, effectiveCourse, foldedComfortStops, hasCoord, isReferencePoint, kakaoLink, moveStop, naverLink, parseTime, routeLink, routeLinkMode, routeStops, schedule, setStartAt } from './engine';
+import {
+  ArrowDownUp,
+  ArrowRight,
+  Backpack,
+  CalendarDays,
+  Camera,
+  Check,
+  ChevronDown,
+  Clock3,
+  Download,
+  Heart,
+  Home,
+  MapPin,
+  Navigation,
+  ParkingCircle,
+  Phone,
+  Plus,
+  RotateCcw,
+  Settings2,
+  ShieldCheck,
+  Sparkles,
+  Trash2,
+  Utensils,
+  Waves,
+  X,
+} from 'lucide-react';
+import {
+  celebrationTemplates,
+  courses,
+  courseScheduleDefaults,
+  foodRecommendations,
+  kneeCareTips,
+  packingGroups,
+  placeInfo,
+  places,
+  resolvePlaceId,
+  sourceLinks,
+} from './trip';
+import type { CourseId, FoodRecommendation, Stop, TabId, TripState } from './trip';
+import {
+  clock,
+  effectiveCourse,
+  foldedComfortStops,
+  hasCoord,
+  isReferencePoint,
+  kakaoLink,
+  moveStop,
+  naverLink,
+  parseTime,
+  routeLink,
+  routeLinkMode,
+  routeStops,
+  schedule,
+  setStartAt,
+  tripStatusLabel,
+} from './engine';
 import type { Scheduled } from './engine';
 import { compressPhoto, deleteMemory, listMemories, loadTrip, putMemory, STORAGE_KEY } from './storage';
 import type { Memory } from './storage';
@@ -17,6 +69,7 @@ const nav = [
   { id: 'packing', label: '준비물', icon: Backpack },
   { id: 'memories', label: '여행기록', icon: Camera },
 ] as const;
+
 const photoPaths: Record<string, string> = {
   naksan: 'naksan-beach',
   sokcho: 'sokcho-beach',
@@ -33,6 +86,20 @@ const photoPaths: Record<string, string> = {
   sanchae: 'sanchae',
   cafe: 'cafe-latte',
 };
+
+const kindLabels: Record<Stop['kind'], string> = {
+  start: '🚗 출발',
+  rest: '🚙 휴식',
+  visit: '🌿 구경',
+  meal: '🍲 식사',
+  cafe: '☕ 카페',
+  hotel: '♨️ 체크인',
+  spa: '♨️ 온천·휴식',
+  checkout: '🧳 퇴실',
+  celebrate: '🎂 칠순 축하',
+  home: '🏠 귀가',
+};
+
 const CREDIT = [
   ['낙산해변', 'Grapesurgeon', 'CC BY-SA 4.0', 'https://commons.wikimedia.org/wiki/File:Naksan_Beach_01.jpg', 'https://creativecommons.org/licenses/by-sa/4.0/'],
   ['속초해변', 'Grapesurgeon', 'CC BY-SA 4.0', 'https://commons.wikimedia.org/wiki/File:Sokcho_Beach_01.jpg', 'https://creativecommons.org/licenses/by-sa/4.0/'],
@@ -56,7 +123,7 @@ function Links({ place }: { place: string }) {
   return (
     <div className="actions map-actions">
       <a className="map-link" href={naverLink(place)} target="_blank" rel="noreferrer">
-        <Navigation size={18} />
+        <Navigation size={17} />
         네이버지도 검색
         <span className="sr-only"> 장소 확인 후 길찾기 (새 창)</span>
       </a>
@@ -90,12 +157,7 @@ function Photo({ place, kind, title }: { place: string; kind?: Stop['kind']; tit
   if (path) {
     return (
       <figure className="photo-figure">
-        <img
-          className="destination-photo"
-          src={`${import.meta.env.BASE_URL}places/${path}.jpg`}
-          alt={`${info.name} 참고 사진`}
-          loading="lazy"
-        />
+        <img className="destination-photo" src={`${import.meta.env.BASE_URL}places/${path}.jpg`} alt={`${info.name} 참고 사진`} loading="lazy" />
         <figcaption className="photo-caption">{photoCaption(photoKey)}</figcaption>
       </figure>
     );
@@ -160,6 +222,9 @@ export default function App() {
   const [notice, setNotice] = useState('');
   const [editing, setEditing] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [resetConfirm, setResetConfirm] = useState(false);
+  const [todoOnly, setTodoOnly] = useState(false);
+  const [customItemInput, setCustomItemInput] = useState('');
   const [memories, setMemories] = useState<Memory[]>([]);
   const [recordError, setRecordError] = useState('');
   const [recordBusy, setRecordBusy] = useState(false);
@@ -173,12 +238,17 @@ export default function App() {
   const course = effectiveCourse(state.settings);
   const rawStops = state.schedules[course][day];
   const rows = schedule(rawStops, state.settings, day);
+  const day1Summary = schedule(state.schedules[course][0], state.settings, 0);
+  const day2Summary = schedule(state.schedules[course][1], state.settings, 1);
   const foldedStops = foldedComfortStops(rawStops, state.settings, day);
   const editRow = rows.find(row => row.stop.id === editing);
   const currentCourse = courses.find(item => item.id === course)!;
-  const packingItems = packingGroups.flatMap(group => group.items);
+  const customItems = state.customPacking ?? [];
+  const packingItems = [...packingGroups.flatMap(group => group.items), ...customItems];
   const completed = packingItems.filter(item => state.checks.includes(item)).length;
+  const doneStopsCount = rows.filter(r => r.stop.done).length;
   const editingMemory = memories.find(memory => memory.id === recordEdit);
+  const statusBadge = tripStatusLabel();
 
   useEffect(() => {
     try {
@@ -207,7 +277,7 @@ export default function App() {
 
   useEffect(() => {
     if (!notice) return;
-    const timer = setTimeout(() => setNotice(''), 6500);
+    const timer = setTimeout(() => setNotice(''), 6000);
     return () => clearTimeout(timer);
   }, [notice]);
 
@@ -265,6 +335,58 @@ export default function App() {
     setUndo({ course, day, stops: rawStops });
     changeStops(rawStops.filter(stop => stop.id !== id), true);
     setNotice('일정을 삭제했어요. 아래에서 되돌릴 수 있어요.');
+  }
+
+  function addFoodToPlan(item: FoodRecommendation) {
+    setUndo({ course, day, stops: rawStops });
+    const kind: Stop['kind'] = item.kind === '식당' ? 'meal' : 'cafe';
+    const nextStop: Stop = {
+      id: crypto.randomUUID(),
+      place: item.query,
+      kind,
+      title: `${item.name} ${item.kind === '식당' ? '식사' : '휴식'}`,
+      description: item.description,
+      minutes: item.kind === '식당' ? 80 : 50,
+      transfer: 15,
+      walk: 2,
+      burden: '매우 적음',
+      parking: `${item.address ? `${item.address} · ` : ''}${item.phone ? `${item.phone} · ` : ''}영업·주차·입식 좌석 확인`,
+      optional: true,
+    };
+    const next = [...rawStops];
+    const anchorIndex =
+      day === 0
+        ? rawStops.findIndex(stop => stop.kind === 'hotel')
+        : rawStops.findIndex(stop => stop.kind === 'rest' && rawStops.indexOf(stop) > 2);
+    const insertAt = anchorIndex >= 0 ? anchorIndex : Math.max(0, rawStops.length - 1);
+    next.splice(insertAt, 0, nextStop);
+    changeStops(next, true);
+    go('plan');
+    setNotice(`${item.name} 일정을 ${course}코스 ${day + 1}일차에 넣었어요. 이동 확보 시간을 확인해 주세요.`);
+  }
+
+  function addCustomPackingItem(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const cleaned = customItemInput.trim().slice(0, 80);
+    if (!cleaned) return;
+    if (packingItems.includes(cleaned)) {
+      setNotice('이미 준비물 목록에 있어요.');
+      return;
+    }
+    setState(previous => ({
+      ...previous,
+      customPacking: [...(previous.customPacking ?? []), cleaned].slice(0, 50),
+    }));
+    setCustomItemInput('');
+    setNotice(`‘${cleaned}’을(를) 준비물에 추가했어요.`);
+  }
+
+  function removeCustomPackingItem(item: string) {
+    setState(previous => ({
+      ...previous,
+      customPacking: (previous.customPacking ?? []).filter(x => x !== item),
+      checks: previous.checks.filter(x => x !== item),
+    }));
   }
 
   function closeIntro() {
@@ -328,9 +450,12 @@ export default function App() {
           aria-pressed={state.settings.course === item.id}
           onClick={() => selectCourse(item.id)}
         >
-          <span className="course-icon">{item.icon}</span>
+          <div className="course-card-top">
+            <span className="course-icon">{item.icon}</span>
+            {item.id === 'A' && <span className="best-badge">가장 추천</span>}
+          </div>
           <span className="course-code">
-            {item.id}코스 {state.settings.course === item.id && <Check size={19} />}
+            {item.id}코스 {state.settings.course === item.id && <Check size={18} />}
           </span>
           <strong>{item.title}</strong>
           <span className="course-sub">{item.sub}</span>
@@ -361,10 +486,10 @@ export default function App() {
   const comfortControl = (
     <div className="comfort-bar">
       <div>
-        <ShieldCheck size={25} />
+        <ShieldCheck size={24} />
         <span>
           <strong>엄마 편안 모드</strong>
-          <small>걷기는 짧게, 휴식은 넉넉히</small>
+          <small>걷기는 짧게, 휴식·카페는 넉넉히</small>
         </span>
       </div>
       <button
@@ -378,6 +503,9 @@ export default function App() {
       </button>
     </div>
   );
+
+  const hotelPreview = day1Summary.find(row => row.stop.kind === 'hotel');
+  const homePreview = day2Summary.at(-1);
 
   return (
     <>
@@ -414,61 +542,78 @@ export default function App() {
 
         <main id="main-content" className="app-layout">
           {tab === 'home' && (
-            <section className="trip-cover" aria-label="여행 소개 배너">
-              <div className="cover-art">
-                <img src={bannerAsset} alt="베이지 캡모자와 선글라스를 쓴 동생과 가족이 함께 웃는 칠순여행 배너 일러스트" />
-              </div>
-              <div className="cover-copy">
-                <p className="eyebrow">우리 가족의 행복한 1박 2일</p>
-                <h1>
-                  엄마 칠순여행<span>♥</span>
-                </h1>
-                <div className="trip-tags">
-                  <span>
-                    <CalendarDays size={15} />
-                    11.22(일) — 23(월)
-                  </span>
-                  <span>춘천 오전 8시 출발</span>
-                  <span>오색그린야드호텔</span>
+            <section className="tab-panel" key="panel-home">
+              <div className="trip-cover" aria-label="여행 소개 배너">
+                <div className="cover-art">
+                  <img src={bannerAsset} alt="베이지 캡모자와 선글라스를 쓴 동생과 가족이 함께 웃는 칠순여행 배너 일러스트" />
+                  <span className="dday-pill">🌷 {statusBadge}</span>
                 </div>
-                <p className="family-line">엄마 · 막내이모 · 형 · 나 · 4인 자가용 여행</p>
+                <div className="cover-copy">
+                  <p className="eyebrow">우리 가족의 행복한 1박 2일</p>
+                  <h1>
+                    엄마 칠순여행<span>♥</span>
+                  </h1>
+                  <div className="trip-tags">
+                    <span>
+                      <CalendarDays size={15} />
+                      11.22(일) — 23(월)
+                    </span>
+                    <span>춘천 오전 8시 출발</span>
+                    <span>오색그린야드호텔</span>
+                  </div>
+                  <p className="family-line">엄마 · 막내이모 · 형 · 나 · 4인 자가용 여행</p>
+                  <div className="principle-strip">
+                    <span>🚶 5~10분 걷기</span>
+                    <span>🍲 식사 70~90분</span>
+                    <span>♨️ 온천·휴식 우선</span>
+                  </div>
+                </div>
               </div>
-            </section>
-          )}
 
-          {['home', 'plan', 'map'].includes(tab) && comfortControl}
+              {comfortControl}
 
-          {(!online || saveError) && (
-            <div className="notice" role="status">
-              <p>
-                {saveError
-                  ? '저장 공간이 부족하거나 저장 권한이 없어요. 변경 내용이 기기에 남지 않을 수 있어요.'
-                  : '인터넷 연결이 없어요. 저장된 일정과 기록을 볼 수 있어요. 지도는 연결 후 이용해 주세요.'}
-              </p>
-            </div>
-          )}
+              {(!online || saveError) && (
+                <div className="notice" role="status">
+                  <p>
+                    {saveError
+                      ? '저장 공간이 부족하거나 저장 권한이 없어요. 변경 내용이 기기에 남지 않을 수 있어요.'
+                      : '인터넷 연결이 없어요. 저장된 일정과 기록을 볼 수 있어요. 지도는 연결 후 이용해 주세요.'}
+                  </p>
+                </div>
+              )}
 
-          {state.settings.course === 'B' && state.settings.road === 'closed' && (
-            <div className="notice">
-              <ShieldCheck />
-              <p>
-                <strong>한계령 통제로 A코스를 대신 보여드려요.</strong>
-                <span>B코스에 저장한 내용은 그대로 있어요. 도로 개방 상태를 바꾸면 다시 볼 수 있어요.</span>
-              </p>
-            </div>
-          )}
+              {state.settings.course === 'B' && state.settings.road === 'closed' && (
+                <div className="notice">
+                  <ShieldCheck />
+                  <p>
+                    <strong>한계령 통제로 A코스를 대신 보여드려요.</strong>
+                    <span>B코스에 저장한 내용은 그대로 있어요. 도로 개방 상태를 바꾸면 다시 볼 수 있어요.</span>
+                  </p>
+                </div>
+              )}
 
-          {tab === 'home' && (
-            <section>
               <div className="section-heading">
                 <p className="eyebrow">엄마 속도에 맞춘 여행</p>
                 <h2>A / B / C / D 코스 고르기</h2>
                 <p>좋아하는 풍경을 골라요. 언제든 바꿀 수 있어요.</p>
               </div>
               {courseCards}
+
+              <div className="course-summary">
+                <div>
+                  <strong>{course}코스 요약 · {currentCourse.title}</strong>
+                  <span>
+                    1일차 체크인 {hotelPreview ? clock(hotelPreview.start) : '15:00'} · 2일차 집 도착 예정{' '}
+                    {homePreview ? clock(homePreview.start) : '17:30'}
+                  </span>
+                </div>
+                <span className="summary-pill">총 {day1Summary.length + day2Summary.length}개 일정</span>
+              </div>
+
               <button className="primary" onClick={() => go('plan')}>
                 {course}코스 여행 일정 보기 <ArrowRight />
               </button>
+
               <div className="home-shortcuts">
                 <button onClick={() => go('packing')}>
                   <Backpack />
@@ -480,7 +625,7 @@ export default function App() {
                 <button onClick={() => go('memories')}>
                   <Camera />
                   <strong>가족 여행 사진</strong>
-                  <span>사진과 추억 남기기</span>
+                  <span>{memories.length ? `${memories.length}건 저장됨` : '사진과 추억 남기기'}</span>
                 </button>
                 <button
                   className="shortcut-wide"
@@ -495,14 +640,16 @@ export default function App() {
                   <span>양양·오색·속초 {foodRecommendations.length}곳 바로 보기</span>
                 </button>
               </div>
+
               <div className="gentle-note">
-                <Heart size={23} />
+                <Heart size={22} />
                 <p>
                   <strong>10분, 30분 늦어져도 괜찮아요.</strong>
                   <br />
                   관광지 하나를 빼고 쉬는 것도 좋은 여행이에요.
                 </p>
               </div>
+
               <details className="settings-panel">
                 <summary>
                   <span>
@@ -543,12 +690,35 @@ export default function App() {
                   공식 도로 통제 확인 ↗
                 </a>
               </details>
+
               <HotelInfo />
             </section>
           )}
 
           {tab === 'plan' && (
-            <section>
+            <section className="tab-panel" key="panel-plan">
+              {comfortControl}
+
+              {(!online || saveError) && (
+                <div className="notice" role="status">
+                  <p>
+                    {saveError
+                      ? '저장 공간이 부족하거나 저장 권한이 없어요. 변경 내용이 기기에 남지 않을 수 있어요.'
+                      : '인터넷 연결이 없어요. 저장된 일정과 기록을 볼 수 있어요. 지도는 연결 후 이용해 주세요.'}
+                  </p>
+                </div>
+              )}
+
+              {state.settings.course === 'B' && state.settings.road === 'closed' && (
+                <div className="notice">
+                  <ShieldCheck />
+                  <p>
+                    <strong>한계령 통제로 A코스를 대신 보여드려요.</strong>
+                    <span>B코스에 저장한 내용은 그대로 있어요. 도로 개방 상태를 바꾸면 다시 볼 수 있어요.</span>
+                  </p>
+                </div>
+              )}
+
               <div className="section-heading">
                 <p className="eyebrow">서두르지 않는 여행</p>
                 <h2>{course}코스 · 우리의 이틀</h2>
@@ -562,13 +732,23 @@ export default function App() {
                 ))}
               </div>
               {dayTabs}
-              <div className="notice">
-                <Clock3 size={23} />
-                <p>
-                  <strong>표시 시간은 여유를 둔 계획이에요.</strong>
-                  <span>차량 소요시간·거리는 지도 앱에서 확인해요. 이동 확보 시간을 직접 바꾸면 뒤 일정이 조정돼요.</span>
-                </p>
-              </div>
+
+              {rows.length > 0 && (
+                <div className="plan-progress">
+                  <div className="plan-progress-top">
+                    <span>
+                      오늘 진행 <strong>{doneStopsCount}</strong> / {rows.length} 완료
+                    </span>
+                    <span className="plan-span">
+                      <Clock3 size={15} />
+                      {clock(rows[0].start)}–{clock(rows.at(-1)!.end)}
+                    </span>
+                  </div>
+                  <progress aria-label="오늘 일정 완료율" value={doneStopsCount} max={rows.length} />
+                  <small>표시 시간은 여유를 둔 계획이며 실제 소요시간은 지도에서 확인해요.</small>
+                </div>
+              )}
+
               <div className="plan-toolbar">
                 <label>
                   하루 시작{' '}
@@ -638,14 +818,15 @@ export default function App() {
                 {rows.map(({ stop, start, end, wait }) => {
                   const index = rawStops.findIndex(item => item.id === stop.id);
                   return (
-                    <article key={stop.id} className={`stop ${stop.done ? 'stop-done' : ''} ${stop.kind === 'celebrate' ? 'stop-special' : ''}`}>
+                    <article key={stop.id} className={`stop stop-${stop.kind} ${stop.done ? 'stop-done' : ''} ${stop.kind === 'celebrate' ? 'stop-special' : ''}`}>
                       <div className="stop-marker">{stop.done ? <Check size={17} /> : index + 1}</div>
-                      <div className="stop-main">
+                      <div className="stop-main stop-card">
                         <div className="stop-top">
                           <time>
                             {clock(start)}
                             {end !== start ? `–${clock(end)}` : ''}
                           </time>
+                          <span className="kind-badge">{kindLabels[stop.kind]}</span>
                           <span className="stop-tag">{stop.burden}</span>
                         </div>
                         <button className="stop-title" onClick={() => setEditing(stop.id)}>
@@ -677,9 +858,9 @@ export default function App() {
                           <Links place={stop.place} />
                         </details>
                         <div className="stop-controls">
-                          <label>
+                          <label className={`done-toggle ${stop.done ? 'is-done' : ''}`}>
                             <input type="checkbox" checked={!!stop.done} onChange={event => changeStop(stop.id, { done: event.target.checked })} />
-                            일정 완료
+                            <span>{stop.done ? '✓ 완료했어요' : '일정 완료'}</span>
                           </label>
                           <div>
                             <button className="icon-button" aria-label={`${stop.title} 위로 이동`} disabled={index === 0} onClick={() => changeStops(moveStop(rawStops, index, -1))}>
@@ -747,11 +928,18 @@ export default function App() {
                   선택 관광의 ‘건너뛰기’를 누르면 뒤 일정도 당겨져요.
                 </p>
               </div>
+
+              <button type="button" className="text-button reset-course-btn" onClick={() => setResetConfirm(true)}>
+                <RotateCcw size={17} />
+                {course}코스 기본 추천 일정으로 되돌리기
+              </button>
             </section>
           )}
 
           {tab === 'map' && (
-            <section>
+            <section className="tab-panel" key="panel-map">
+              {comfortControl}
+
               <div className="section-heading">
                 <p className="eyebrow">실제 방문 순서대로</p>
                 <h2>{course}코스 지도와 이동</h2>
@@ -765,6 +953,15 @@ export default function App() {
                 ))}
               </div>
               {dayTabs}
+
+              {routeStops(rows).length > 1 && (
+                <div className="route-summary" aria-label="오늘 이동 경로 요약">
+                  {routeStops(rows)
+                    .map(r => placeInfo(r.stop.place).name.split(' (')[0])
+                    .join(' → ')}
+                </div>
+              )}
+
               <div className="notice">
                 <Navigation size={23} />
                 <p>
@@ -812,18 +1009,19 @@ export default function App() {
               <p className="muted">
                 지도에서 실제 출발지(집 주소)와 도착 주차장 입구를 확인한 뒤 자동차 경로를 시작해요. 식당·카페를 바꾸면 ‘일정 수정’에서 장소와 이동 확보 시간도 바꿔 주세요. (좌표 출처: OpenStreetMap)
               </p>
-              <FoodGuide />
+              <FoodGuide course={course} day={day} onAddFood={addFoodToPlan} />
               <HotelInfo />
             </section>
           )}
 
           {tab === 'packing' && (
-            <section>
+            <section className="tab-panel" key="panel-packing">
               <div className="section-heading">
                 <p className="eyebrow">가볍게, 빠짐없이</p>
                 <h2>여행 준비물</h2>
                 <p>챙긴 물건은 한 번 눌러 표시해요.</p>
               </div>
+
               <div className="packing-progress">
                 <div>
                   <strong>
@@ -833,33 +1031,92 @@ export default function App() {
                   <Backpack size={29} />
                 </div>
                 <progress aria-label="준비물 완료" value={completed} max={packingItems.length} />
-                <p>체크는 지금 사용하는 기기에 저장돼요.</p>
+                <div className="packing-progress-foot">
+                  <p>{completed === packingItems.length ? '🎉 모든 준비물을 챙겼어요!' : '체크는 지금 사용하는 기기에 저장돼요.'}</p>
+                  <button type="button" className="filter-pill" aria-pressed={todoOnly} onClick={() => setTodoOnly(v => !v)}>
+                    {todoOnly ? '전체 보기' : '안 챙긴 것만'}
+                  </button>
+                </div>
               </div>
-              {packingGroups.map(group => (
-                <div className="packing-group" key={group.title}>
-                  <h3>{group.title}</h3>
+
+              <form className="packing-add-form" onSubmit={addCustomPackingItem}>
+                <input
+                  type="text"
+                  maxLength={80}
+                  value={customItemInput}
+                  onChange={e => setCustomItemInput(e.target.value)}
+                  placeholder="준비물 추가 (예: 선글라스)"
+                  aria-label="새 준비물 입력"
+                />
+                <button type="submit" className="map-link">
+                  <Plus size={18} />
+                  추가
+                </button>
+              </form>
+
+              {packingGroups.map(group => {
+                const visibleItems = todoOnly ? group.items.filter(item => !state.checks.includes(item)) : group.items;
+                if (todoOnly && !visibleItems.length) return null;
+                return (
+                  <div className="packing-group" key={group.title}>
+                    <h3>{group.title}</h3>
+                    <div>
+                      {visibleItems.map(item => (
+                        <label className={`check-row ${state.checks.includes(item) ? 'checked' : ''}`} key={item}>
+                          <input
+                            type="checkbox"
+                            checked={state.checks.includes(item)}
+                            onChange={() =>
+                              setState(previous => ({
+                                ...previous,
+                                checks: previous.checks.includes(item) ? previous.checks.filter(x => x !== item) : [...previous.checks, item],
+                              }))
+                            }
+                          />
+                          <span className="checkbox-visual" aria-hidden="true">
+                            {state.checks.includes(item) && <Check size={21} />}
+                          </span>
+                          <span>{item}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {customItems.length > 0 && (!todoOnly || customItems.some(item => !state.checks.includes(item))) && (
+                <div className="packing-group">
+                  <h3>내가 추가한 준비물</h3>
                   <div>
-                    {group.items.map(item => (
-                      <label className={`check-row ${state.checks.includes(item) ? 'checked' : ''}`} key={item}>
-                        <input
-                          type="checkbox"
-                          checked={state.checks.includes(item)}
-                          onChange={() =>
-                            setState(previous => ({
-                              ...previous,
-                              checks: previous.checks.includes(item) ? previous.checks.filter(x => x !== item) : [...previous.checks, item],
-                            }))
-                          }
-                        />
-                        <span className="checkbox-visual" aria-hidden="true">
-                          {state.checks.includes(item) && <Check size={21} />}
-                        </span>
-                        <span>{item}</span>
-                      </label>
-                    ))}
+                    {customItems
+                      .filter(item => !todoOnly || !state.checks.includes(item))
+                      .map(item => (
+                        <div className={`check-row custom-check-row ${state.checks.includes(item) ? 'checked' : ''}`} key={item}>
+                          <label>
+                            <input
+                              type="checkbox"
+                              checked={state.checks.includes(item)}
+                              onChange={() =>
+                                setState(previous => ({
+                                  ...previous,
+                                  checks: previous.checks.includes(item) ? previous.checks.filter(x => x !== item) : [...previous.checks, item],
+                                }))
+                              }
+                            />
+                            <span className="checkbox-visual" aria-hidden="true">
+                              {state.checks.includes(item) && <Check size={21} />}
+                            </span>
+                            <span>{item}</span>
+                          </label>
+                          <button type="button" className="icon-button" aria-label={`${item} 삭제`} onClick={() => removeCustomPackingItem(item)}>
+                            <X size={18} />
+                          </button>
+                        </div>
+                      ))}
                   </div>
                 </div>
-              ))}
+              )}
+
               <div className="gentle-note">
                 <Heart />
                 <p>온천 포함 여부와 수건 제공은 호텔에 확인해요. 칫솔·치약은 직접 챙겨요.</p>
@@ -868,23 +1125,43 @@ export default function App() {
           )}
 
           {tab === 'memories' && (
-            <section>
+            <section className="tab-panel" key="panel-memories">
               <div className="section-heading">
                 <p className="eyebrow">함께라서 오래 기억할 날</p>
                 <h2>우리 가족 여행기록</h2>
                 <p>사진도, 엄마에게 전할 마음도 남겨요.</p>
               </div>
-              <label className="message-box">
-                <span>엄마에게 칠순 축하 한마디 ♥</span>
-                <textarea
-                  rows={3}
-                  maxLength={5000}
-                  value={state.message}
-                  onChange={event => setState(previous => ({ ...previous, message: event.target.value }))}
-                  placeholder="엄마, 칠순 축하해요. 오래오래 함께 여행해요."
-                />
-                <small>입력하면 이 기기에 자동 저장돼요.</small>
-              </label>
+
+              <div className="message-box">
+                <label>
+                  <span>엄마에게 칠순 축하 한마디 ♥</span>
+                  <textarea
+                    rows={3}
+                    maxLength={5000}
+                    value={state.message}
+                    onChange={event => setState(previous => ({ ...previous, message: event.target.value }))}
+                    placeholder="엄마, 칠순 축하해요. 오래오래 함께 여행해요."
+                  />
+                </label>
+                <div className="template-chips" aria-label="축하 문구 추천">
+                  {celebrationTemplates.map(tpl => (
+                    <button
+                      type="button"
+                      key={tpl}
+                      className="chip-button"
+                      onClick={() => {
+                        setState(previous => ({ ...previous, message: tpl }));
+                        setNotice('축하 메시지를 채웠어요. 자유롭게 수정할 수 있어요.');
+                      }}
+                    >
+                      <Sparkles size={14} />
+                      {tpl.slice(0, 14)}…
+                    </button>
+                  ))}
+                </div>
+                <small>입력하면 이 기기에 자동 저장돼요. PDF 앨범 표지에도 담겨요.</small>
+              </div>
+
               <form className="record-form" key={recordEdit || 'new'} onSubmit={saveRecord}>
                 <h3>{recordEdit ? '추억 수정하기' : '새 추억 남기기'}</h3>
                 <label className="field">
@@ -925,13 +1202,15 @@ export default function App() {
                   </button>
                 )}
               </form>
+
               <button className="album-button" disabled={albumBusy} onClick={album}>
                 <Download size={23} />
-                <span>{albumBusy ? '앨범을 만들고 있어요…' : '사진 + 일정 PDF 앨범 받기'}</span>
+                <span>{albumBusy ? '앨범을 만들고 있어요…' : `사진 + 일정 PDF 앨범 받기${memories.length ? ` (추억 ${memories.length}건)` : ''}`}</span>
               </button>
               <p className="muted">
                 사진과 기록은 이 브라우저에만 저장돼요. 기기 간 공유되지 않으며, 브라우저 데이터를 지우면 사라져요. PDF로 소중한 추억을 보관해 주세요.
               </p>
+
               <div className="memory-grid">
                 {memories.map(memory => (
                   <article className="memory-card" key={memory.id}>
@@ -1101,6 +1380,30 @@ export default function App() {
         </Modal>
       )}
 
+      {resetConfirm && (
+        <Modal title={`${course}코스 기본 일정으로 되돌릴까요?`} close={() => setResetConfirm(false)}>
+          <p>{course}코스의 1·2일차 일정만 추천 기본값으로 되돌려요. 저장한 사진·추억·준비물 체크는 그대로 유지돼요.</p>
+          <button
+            className="primary"
+            onClick={() => {
+              const fresh = courseScheduleDefaults(course);
+              setState(previous => ({
+                ...previous,
+                schedules: { ...previous.schedules, [course]: fresh },
+              }));
+              setUndo(null);
+              setResetConfirm(false);
+              setNotice(`${course}코스를 기본 추천 일정으로 되돌렸어요.`);
+            }}
+          >
+            기본 추천 일정 적용 <RotateCcw size={19} />
+          </button>
+          <button className="text-button" onClick={() => setResetConfirm(false)}>
+            지금 일정 유지할게요
+          </button>
+        </Modal>
+      )}
+
       {deleteId && (
         <Modal title="이 추억을 지울까요?" close={() => setDeleteId(null)}>
           <p>이 기기에 저장한 사진과 메모가 함께 삭제돼요.</p>
@@ -1253,7 +1556,7 @@ function HotelInfo() {
     <div className="hotel-info">
       <div className="subheading">
         <p className="eyebrow">필요할 때 바로 찾기</p>
-        <h3>숙소와 온천 정보</h3>
+        <h3>숙소 · 온천 · 배려 팁</h3>
       </div>
       <article className="reservation">
         <div className="reservation-head">
@@ -1289,6 +1592,7 @@ function HotelInfo() {
         </a>
         <Links place="hotel" />
       </article>
+
       <article className="info-card">
         <div className="card-title">
           <Waves />
@@ -1312,6 +1616,22 @@ function HotelInfo() {
           온천 문의 033-670-0880
         </a>
       </article>
+
+      <details className="settings-panel">
+        <summary>
+          <span>
+            <Heart size={20} />
+            엄마 무릎 · 이동 배려 팁
+          </span>
+          <ChevronDown size={20} />
+        </summary>
+        <ul className="simple-list">
+          {kneeCareTips.map(tip => (
+            <li key={tip}>{tip}</li>
+          ))}
+        </ul>
+      </details>
+
       <details className="sources">
         <summary>
           정보 출처 · 좌표 · 사진 저작권 <ChevronDown size={19} />
@@ -1343,7 +1663,7 @@ function HotelInfo() {
   );
 }
 
-function FoodGuide() {
+function FoodGuide({ course, day, onAddFood }: { course: CourseId; day: number; onAddFood: (item: FoodRecommendation) => void }) {
   const [area, setArea] = useState<'전체' | '양양·낙산' | '오색' | '속초'>('전체');
   const [kind, setKind] = useState<'전체' | '식당' | '카페'>('전체');
   const filtered = foodRecommendations.filter(
@@ -1370,11 +1690,21 @@ function FoodGuide() {
         ))}
       </div>
       {filtered.map(item => (
-        <article className="info-card" key={item.name}>
-          <span className="place-label">
-            {item.kind === '식당' ? '🍲' : '☕'} {item.sub}
-          </span>
-          <h3>{item.name}</h3>
+        <article className="info-card food-card" key={item.name}>
+          <div className="food-card-head">
+            <img
+              className="food-thumb"
+              src={`${import.meta.env.BASE_URL}places/${photoPaths[item.photo]}.jpg`}
+              alt={`${item.name} 대표 메뉴 참고 사진`}
+              loading="lazy"
+            />
+            <div>
+              <span className="place-label">
+                {item.kind === '식당' ? '🍲' : '☕'} {item.sub}
+              </span>
+              <h3>{item.name}</h3>
+            </div>
+          </div>
           <p>{item.description}</p>
           {item.address && <p className="muted">{item.address}</p>}
           <div className="guide-meta">
@@ -1392,6 +1722,10 @@ function FoodGuide() {
             )}
           </div>
           <Links place={item.query} />
+          <button type="button" className="add-to-plan-btn" onClick={() => onAddFood(item)}>
+            <Plus size={17} />
+            {course}코스 {day + 1}일차 일정에 넣기
+          </button>
         </article>
       ))}
       {!filtered.length && (

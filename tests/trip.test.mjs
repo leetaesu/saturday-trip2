@@ -171,10 +171,22 @@ describe('지도 링크 구분 및 저장 상태 복원', () => {
     assert.ok(engine.routeLink('beach', 'cafe').startsWith('https://map.kakao.com/link/search/'));
   });
 
-  it('손상된 저장 데이터는 안전하게 기본 상태로 복원한다', () => {
+  it('손상된 저장 데이터는 안전하게 기본 상태로 복원하고 사용자 준비물을 검증한다', () => {
     const bad = engine.restoreState({ version: 1, settings: { course: 'Z' } });
     assert.equal(bad.settings.course, 'A');
     assert.equal(bad.settings.comfort, true);
+    const withCustom = engine.restoreState({ version: 2, customPacking: ['선글라스', '선글라스', '  ', '손수건'] });
+    assert.deepEqual(withCustom.customPacking, ['선글라스', '손수건']);
+  });
+
+  it('D-day 라벨과 코스 기본 일정 초기화를 올바르게 계산한다', () => {
+    assert.equal(engine.tripStatusLabel(new Date(2026, 10, 17)), 'D-5 · 11.22(일) 출발');
+    assert.equal(engine.tripStatusLabel(new Date(2026, 10, 22)), 'D-DAY · 출발하는 날 ♥');
+    assert.equal(engine.tripStatusLabel(new Date(2026, 10, 23)), '여행 둘째 날 · 11.23(월)');
+    assert.equal(engine.tripStatusLabel(new Date(2026, 10, 25)), '함께 다녀온 소중한 이틀 ♥');
+    const bDefault = trip.courseScheduleDefaults('B');
+    assert.equal(bDefault.length, 2);
+    assert.ok(bDefault[0].some(s => s.place === 'olunch'));
   });
 });
 
