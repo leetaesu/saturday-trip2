@@ -60,6 +60,7 @@ import type { Scheduled } from './engine';
 import { compressPhoto, deleteMemory, listMemories, loadTrip, putMemory, STORAGE_KEY } from './storage';
 import type { Memory } from './storage';
 import { exportAlbum } from './pdf';
+import Fireworks from './Fireworks';
 
 const introAsset = `${import.meta.env.BASE_URL}family.png`;
 const bannerAsset = `${import.meta.env.BASE_URL}family-banner.png`;
@@ -217,6 +218,7 @@ export default function App() {
       return true;
     }
   });
+  const [fireworks, setFireworks] = useState(true);
   const [saveError, setSaveError] = useState(false);
   const [online, setOnline] = useState(navigator.onLine);
   const [offlineReady, setOfflineReady] = useState(false);
@@ -554,6 +556,7 @@ export default function App() {
           </div>
         </Modal>
       )}
+      {fireworks && <Fireworks durationMs={5000} onDone={() => setFireworks(false)} />}
 
       <div className="mobile-shell">
         <header className="topbar">
